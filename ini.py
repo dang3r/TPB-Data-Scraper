@@ -3,6 +3,31 @@ from bs4 import BeautifulSoup
 from urllib2 import urlopen
 import sys, types
 
+############
+# Constants
+############
+baseURL = "http://thepiratebay.se" 
+baseURLSearch = "http://thepiratebay.se/search/"
+topSeed = "/0/7/0"
+bottomSeed = "/0/8/0"
+topLeech = "/0/9/0"
+bottomLeech = "/0/10/0"
+top100HDMovies = "/top/207"
+top100HDTV = "/top/208"
+top100SDTV = "/top/205"
+top100SDMovies = "/top/201"
+replaceChar = "%20"
+clformat1 = 'python ini.py -{s,S,l,L} "NAME" '
+clformat2 = 'python ini.py -{m,M,t,T} '
+clist1 = [ '-s','-S','-l','-L']
+clist2 = [ '-m','-M','-t','-T']
+url = ''
+opt = ''
+
+#################
+#DS and Functions
+#################
+
 # Holds torrent information
 class tpbdata:
 	title =""
@@ -30,9 +55,9 @@ def addPageLinks(soup,datalist):
 		try:
 			temp = tpbdata()
 			temp.title = base.a.contents[0]
-			
 			# Seperate the general info from csv format
 			listDesc = base.parent.font.contents[0].split(',')
+		#	print temp.title, listDesc
 			temp.size = listDesc[1].replace("Size",'')
 			temp.date = listDesc[0].replace("Uploaded ","") 
 			temp.seed = base.parent.find_next_siblings()[0].string
@@ -46,63 +71,43 @@ def addPageLinks(soup,datalist):
 #Find the line numbers
 def findLineNumbers():
    lastPage = 1
-   for b in soup.findAll("div", {"align" : "center"}):
-    for line in b.children:
+   for divCenter in soup.findAll("div", {"align" : "center"}):
+    for line in divCenter.children:
         if line != '\n' and line != ' ':
             lineNum = line.string
             if  lineNum is not None and ('xa0' not in repr(lineNum) or '1\\'in repr(lineNum)):
                 lastPage = int(lineNum)
-
    return lastPage
 
 #Add all the torrents from all the specified pages
 def addAllPageLinks(lastPage): 
-   
-	if arglen == 2:
-		soup = BeautifulSoup(urlopen(url))
-		addPageLinks(soup,datalist)
-	elif arglen == 3:	
-		for a in range(0,lastPage):
-			# Convert to list to replace the page no. char
-			optlist = list(opt)
-			optlist[1] = a
-			optstring = ''.join([str(i) for i in lion])
-			tempurl = baseURLSearch + sys.argv[2] + optstring
-			soup =  BeautifulSoup(urlopen(tempurl))
+	try:
+		if arglen == 2:
+			soup = BeautifulSoup(urlopen(url))
 			addPageLinks(soup,datalist)
-	 
+		elif arglen == 3:	
+			for pages in range(0,lastPage):
+				# Convert to list to replace the page no. char
+				optlist = list(opt)
+				optlist[1] = pages
+				optstring = ''.join([str(i) for i in optlist])
+				tempurl = baseURLSearch + sys.argv[2] + optstring
+				soup =  BeautifulSoup(urlopen(tempurl))
+				addPageLinks(soup,datalist)
+	except:
+		print "Error occured when mining the page links. Links might not exist"
+		sys.exit()
+
 def endProgram():
 	print "Enter in one of the valid formats BELOW"
 	print clformat1
 	print clformat2
 	sys.exit()
 
+#####################
+# Main Body of Script
+#####################
 
-
-# Constants
-baseURL = "http://thepiratebay.se" 
-baseURLSearch = "http://thepiratebay.se/search/"
-topSeed = "/0/7/0"
-bottomSeed = "/0/8/0"
-topLeech = "/0/9/0"
-bottomLeech = "/0/10/0"
-top100HDMovies = "/top/207"
-top100HDTV = "/top/208"
-top100SDTV = "/top/205"
-top100SDMovies = "/top/201"
-replaceChar = "%20"
-selectMessage = "Input Request Type below:\n1. Search\n2. Top 100 HD Movies\n3. Top 100 SD Movies\n4. Top 100 HD TV Shows\n5. Top 100 SD TV Shows\n" 
-clformat1 = 'python ini.py -{s,S,l,L} "NAME" '
-clformat2 = 'python ini.py -{m,M,t,T} '
-clist1 = [ '-s','-S','-l','-L']
-clist2 = [ '-m','-M','-t','-T']
-url = ''
-opt = ''
-
-
-
-
-# Main
 arglen = len(sys.argv)
 
 if arglen == 3 and sys.argv[1] in clist1 and isinstance(sys.argv[2], basestring):
@@ -136,11 +141,12 @@ soup = BeautifulSoup(urlopen(url))
 datalist = []
 
 # Assume minimum 1 page
-lastPage = 1
+#lastPage = 1
 print url
 #Find all page numbers and add their data to list
-lastPage = findLineNumbers()
-addAllPageLinks(lastPage)
+pagenum = findLineNumbers()
+#print pagenum
+addAllPageLinks(pagenum)
 
 # Output scraped data
 printAll(datalist)
